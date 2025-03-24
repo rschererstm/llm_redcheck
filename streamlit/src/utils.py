@@ -5,7 +5,7 @@ import json
 import time
 from icecream import ic
 
-import config
+import config_azure as config
 
 # Load layouts.json
 with open("streamlit/src/layouts.json", "r") as f:
