@@ -4,8 +4,15 @@ from openai import AzureOpenAI
 import json
 import time
 from icecream import ic
+import streamlit as st
 
-import config_azure as config
+try:
+    import config_azure as config
+except ImportError:
+    class Config:
+        AZURE_ENDPOINT = 'https://redcheckllm.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-15-preview'
+        AZURE_API_KEY = st.session_state.token
+    config = Config()
 
 # Load layouts.json
 with open("streamlit/src/layouts.json", "r") as f:

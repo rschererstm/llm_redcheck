@@ -1,7 +1,6 @@
 import streamlit as st
 import streamlit_authenticator as stauth
 from utils import analyze_image, synthesize_medical_report
-import config_azure as cfg
 import yaml
 import tempfile
 import os
@@ -39,9 +38,9 @@ def process_single_image(file, exam_type, prompt, eye_key):
 def app():
     config = get_config()
     authenticator = stauth.Authenticate(credentials=config['credentials'])
-    
+
     try:
-        authenticator.login()
+        authenticator.login(fields={'Form name':'Login', 'Username':'Username', 'Password':'Password', 'Login':'Login', 'Captcha':'Captcha'})
     except Exception as e:
         st.error(e)
 
@@ -49,7 +48,12 @@ def app():
         st.warning("Please go to the 'Login' page to authenticate.")
         st.stop()
     elif st.session_state['authentication_status'] != True:
-        st.warning("You are not authenticated. Please go to the 'Login' page.")
+        token_value = st.text_input("Enter your access token", type="password", key="token")
+        if token_value:
+            st.session_state.token = token_value
+        else:
+            st.warning("Token is required for authentication.")
+        st.warning("You are not authenticated.")
         st.stop()
 
     st.title("Eye Report Generator :eyes: :sparkles:")
