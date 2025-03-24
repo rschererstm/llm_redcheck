@@ -1,0 +1,15 @@
+credentials:
+  usernames:
+    redcheck:
+      email: redcheck@redcheck.com.br
+      failed_login_attempts: 0 # Will be managed automatically
+      first_name: RedCheck
+      last_name: Demo
+      logged_in: False # Will be managed automatically
+      password: 2025Retin@ # Will be hashed automatically
+      roles: # Optional
+      - editor
+      - viewer
+pre-authorized: # Optional
+  emails:
+  - redcheck@redcheck.com.br

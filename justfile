@@ -28,3 +28,8 @@ add PACKAGE:
 run:
     source .venv/bin/activate
     streamlit run streamlit/src/main.py
+
+# test azure
+test_azure:
+    source .venv/bin/activate
+    python streamlit/src/utils.py

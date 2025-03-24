@@ -1,81 +1,243 @@
-# src/main.py
-
 import streamlit as st
 import streamlit_authenticator as stauth
-from utils import generate_image_description, generate_combined_report
+from utils import analyze_image, synthesize_medical_report
 import config as cfg
+import yaml
+import tempfile
+import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+st.set_page_config(page_title="Eye Report Generator", layout="wide")
+
+
+def get_config():
+    with open('streamlit/src/auth.yaml') as file:
+        config = yaml.safe_load(file)
+    return config
+
+# --------------------------------------------------
+# Helper function to process a single image in parallel
+# --------------------------------------------------
+def process_single_image(file, exam_type, prompt, eye_key):
+    """
+    file: the uploaded file from st.file_uploader
+    exam_type: e.g. "oct_macula"
+    prompt: the text prompt to pass to analyze_image
+    eye_key: "right" or "left" so we know which eye it belongs to
+    """
+    with tempfile.NamedTemporaryFile(delete=False, suffix=file.name) as tmp:
+        tmp.write(file.read())
+        tmp_path = tmp.name
+
+    result = analyze_image(tmp_path, exam_type, prompt)  # call your custom function
+    os.remove(tmp_path)
+
+    # Return both the eye_key (to sort results later) and the analysis result
+    return eye_key, result
+
 
 def app():
-#     config = get_config()
-#     authenticator = stauth.Authenticate(
-#         credentials=config['credentials'],
-#         cookie_name=config['cookie']['name'],
-#         key=config['cookie']['key'],
-#         cookie_expiry_days=config['cookie']['expiry_days']
-#     )
+    config = get_config()
+    authenticator = stauth.Authenticate(credentials=config['credentials'])
+    
+    try:
+        authenticator.login()
+    except Exception as e:
+        st.error(e)
 
-#     if 'authentication_status' not in st.session_state:
-#         st.warning("Please go to the 'Login' page to authenticate.")
-#         st.stop()
-#     elif st.session_state['authentication_status'] != True:
-#         st.warning("You are not authenticated. Please go to the 'Login' page.")
-#         st.stop()
+    if 'authentication_status' not in st.session_state:
+        st.warning("Please go to the 'Login' page to authenticate.")
+        st.stop()
+    elif st.session_state['authentication_status'] != True:
+        st.warning("You are not authenticated. Please go to the 'Login' page.")
+        st.stop()
 
     st.title("Eye Report Generator :eyes: :sparkles:")
-    st.markdown("This page allows you to upload left eye and right eye images, set custom prompts, and generate a combined report.")
+    st.markdown(
+        "This page allows you to upload left eye and right eye images, set custom prompts, and generate a combined report."
+    )
 
+    # Select exam type
+    exam_type = st.selectbox("Exam Type", ["oct_macula", "retinografia", "campimetria"])
+    
     col1, col2 = st.columns(2)
-
     with col1:
         st.subheader("Right Eye")
-        right_eye_image = st.file_uploader("Upload Right Eye Image", type=["jpg", "jpeg", "png"], key="right_eye")
-        prompt_right = st.text_area("Prompt for Right Eye Description", value="Describe this medical exam...")
-
+        right_eye_image = st.file_uploader(
+            "Upload Right Eye Image(s)",
+            type=["jpg", "jpeg", "png"],
+            accept_multiple_files=True,
+            key="right_eye"
+        )
+        
     with col2:
         st.subheader("Left Eye")
-        left_eye_image = st.file_uploader("Upload Left Eye Image", type=["jpg", "jpeg", "png"], key="left_eye")
-        prompt_left = st.text_area("Prompt for Left Eye Description", value="Describe this medical exam...")
+        left_eye_image = st.file_uploader(
+            "Upload Left Eye Image(s)",
+            type=["jpg", "jpeg", "png"],
+            accept_multiple_files=True,
+            key="left_eye"
+        )
 
-    st.markdown("---")
-    reasoning_prompt = st.text_area("Prompt for Combined Medical Report", value="Summarize each eye condition in a concise medical report...")
+    with st.expander("Additional Options", expanded=False):
+        col3, col4 = st.columns(2)
+        with col3:
+            prompt_right = st.text_area(
+                "Prompt for Right Eye Description",
+                value=(
+                    "Aja como um oftalmologista experiente. Você receberá imagens oftálmicas..."
+                    # truncated for brevity
+                )
+            )
+        with col4:
+            prompt_left = st.text_area(
+                "Prompt for Left Eye Description",
+                value=(
+                    "Aja como um oftalmologista experiente. Você receberá imagens oftálmicas..."
+                    # truncated for brevity
+                )
+            )
 
-    st.subheader("Select Models")
-    description_model = st.text_input("Model for Descriptions (Azure Deployment Name)", value="gpt-4")
-    reasoning_model = st.text_input("Model for Reasoning (Azure Deployment Name)", value="gpt-4")
+        st.markdown("---")
+        reasoning_prompt = st.text_area(
+            "Prompt for Combined Medical Report",
+            value=(
+                "Você é um oftalmologista experiente. A seguir, será apresentada uma série de descrições..."
+                # truncated for brevity
+            )
+        )
+
+        with open('streamlit/src/layouts.json') as file:
+            layouts = yaml.safe_load(file)
+        st.write("Estrutura do Laudo:")
+        st.code(layouts[exam_type])
+
+        description_model = st.text_input("Model for Description (Azure)", value="gpt-4o", disabled=True)
+        reasoning_model   = st.text_input("Model for Reasoning (Azure)", value="gpt-4o", disabled=True)
 
     generate_button = st.button("Generate Medical Report")
 
     if generate_button:
         if not right_eye_image or not left_eye_image:
-            st.error("Please upload both right eye and left eye images.")
-        else:
-            with st.spinner("Generating descriptions..."):
-                right_description = generate_image_description(right_eye_image, prompt_right, description_model)
-                left_description = generate_image_description(left_eye_image, prompt_left, description_model)
+            st.error("Please upload images for both right and left eye.")
+            st.stop()
 
-            st.success("Descriptions generated successfully! :white_check_mark:")
+        # Accumulate total costs from all calls
+        total_costs = {
+            "input_cost": 0.0,
+            "cached_input_cost": 0.0,
+            "output_cost": 0.0,
+            "total_cost": 0.0
+        }
 
-            with st.spinner("Generating combined report..."):
-                final_report_right = generate_combined_report(right_description, left_description, f'RIGHT EYE: {reasoning_prompt}', reasoning_model)
-                final_report_left = generate_combined_report(right_description, left_description, f'LEFT EYE: {reasoning_prompt}', reasoning_model)
-                st.success("Report generated!")
+        # ----------------------------------------------------------
+        # 1. Analyze all images (right + left) in parallel
+        # ----------------------------------------------------------
+        right_descriptions = []
+        left_descriptions = []
 
-                st.markdown("---")
-                col1, col2 = st.columns(2)
+        st.markdown("<p style='color: blue;'><strong>## 1. Analyzing images in parallel...</strong></p>", 
+                    unsafe_allow_html=True)
 
-                with col1:
-                    st.markdown("### Right Eye Description")
-                    st.write(right_description)
+        with st.spinner("Analyzing images in parallel..."):
+            futures = []
+            with ThreadPoolExecutor() as executor:
+                # Queue up Right Eye images
+                for file in right_eye_image:
+                    futures.append(
+                        executor.submit(
+                            process_single_image, file, exam_type, prompt_right, "right"
+                        )
+                    )
+                # Queue up Left Eye images
+                for file in left_eye_image:
+                    futures.append(
+                        executor.submit(
+                            process_single_image, file, exam_type, prompt_left, "left"
+                        )
+                    )
 
-                    st.markdown("### Right Eye Report")
-                    st.write(final_report_right)
-                with col2:
-                    st.markdown("### Left Eye Description")
-                    st.write(left_description)
-                    st.markdown("### Left Eye Report")
-                    st.write(final_report_left)
+                # Gather results
+                for f in as_completed(futures):
+                    eye_key, result = f.result()
 
-    # authenticator.logout("Logout", "sidebar")
+                    # Accumulate costs from each call
+                    for k in total_costs:
+                        total_costs[k] += result["costs"][k]
+
+                    if eye_key == "right":
+                        right_descriptions.append(result["output"])
+                    else:
+                        left_descriptions.append(result["output"])
+
+        st.success("All images analyzed!")
+
+        # Optional: Show the raw descriptions
+        with st.expander("Show Raw Descriptions", expanded=False):
+            st.markdown("<p style='color: blue; font-weight:bold;'> 🖼️ Descriptions of each image</p>", unsafe_allow_html=True)
+            colA, colB = st.columns(2)
+
+            with colA:
+                st.markdown("**Right Eye Descriptions**")
+                for idx, desc in enumerate(right_descriptions, start=1):
+                    st.write(f"**Image #{idx}**:")
+                    st.write(desc)
+
+            with colB:
+                st.markdown("**Left Eye Descriptions**")
+                for idx, desc in enumerate(left_descriptions, start=1):
+                    st.write(f"**Image #{idx}**:")
+                    st.write(desc)
+
+        # ----------------------------------------------------------
+        # 2. Generate final reports for each eye in parallel
+        # ----------------------------------------------------------
+        st.markdown("<p style='color: blue;'><strong>## 2. Generating final reports in parallel...</strong></p>", 
+                    unsafe_allow_html=True)
+
+        with st.spinner("Generating final reports in parallel..."):
+            with ThreadPoolExecutor() as executor:
+                future_right = executor.submit(
+                    synthesize_medical_report,
+                    right_descriptions,
+                    exam_type,
+                    reasoning_prompt
+                )
+                future_left = executor.submit(
+                    synthesize_medical_report,
+                    left_descriptions,
+                    exam_type,
+                    reasoning_prompt
+                )
+
+                final_report_right = future_right.result()
+                final_report_left  = future_left.result()
+
+                # Accumulate costs
+                for k in total_costs:
+                    total_costs[k] += final_report_right["costs"][k]
+                for k in total_costs:
+                    total_costs[k] += final_report_left["costs"][k]
+
+        st.success("Final reports generated!")
+
+        # ----------------------------------------------------------
+        # Display final
+        # ----------------------------------------------------------
+        st.markdown("### Right Eye Final Report")
+        st.json(final_report_right["output"])
+
+        st.markdown("### Left Eye Final Report")
+        st.json(final_report_left["output"])
+
+        st.markdown("---")
+        st.markdown("<p style='color: blue;'>**## 3. Total Costs 💰**</p>", unsafe_allow_html=True)
+        st.write("Below is the sum of input, cached input, and output costs for **all** calls:")
+        st.json({k: f"U${round(v, 3)}" for k, v in total_costs.items()})
+
+    st.sidebar.title("Navigation")
+    authenticator.logout("Logout", "sidebar")
+
 
 if __name__ == "__main__":
     app()
