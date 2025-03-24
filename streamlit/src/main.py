@@ -2,9 +2,8 @@
 
 import streamlit as st
 import streamlit_authenticator as stauth
-import config as cfg
 from utils import generate_image_description, generate_combined_report
-
+import config as cfg
 
 def app():
 #     config = get_config()

@@ -10,7 +10,7 @@ new PYTHON_VERSION="python3":
     source .venv/bin/activate
     pip install uv
     uv init
-    uv add ipykernel numpy pandas matplotlib
+    uv add ipykernel numpy pandas matplotlib streamlit
     uv pip freeze > requirements.txt
     uv sync
     curl -o .gitignore https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore
@@ -23,3 +23,8 @@ add PACKAGE:
     uv add {{PACKAGE}}
     uv pip freeze > requirements.txt
     uv sync
+
+# Streamlit run
+run:
+    source .venv/bin/activate
+    streamlit run streamlit/src/main.py
