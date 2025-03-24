@@ -1,6 +1,5 @@
 import streamlit as st
 import streamlit_authenticator as stauth
-from utils import analyze_image, synthesize_medical_report
 import yaml
 import tempfile
 import os
@@ -13,26 +12,6 @@ def get_config():
     with open('streamlit/src/auth.yaml') as file:
         config = yaml.safe_load(file)
     return config
-
-# --------------------------------------------------
-# Helper function to process a single image in parallel
-# --------------------------------------------------
-def process_single_image(file, exam_type, prompt, eye_key):
-    """
-    file: the uploaded file from st.file_uploader
-    exam_type: e.g. "oct_macula"
-    prompt: the text prompt to pass to analyze_image
-    eye_key: "right" or "left" so we know which eye it belongs to
-    """
-    with tempfile.NamedTemporaryFile(delete=False, suffix=file.name) as tmp:
-        tmp.write(file.read())
-        tmp_path = tmp.name
-
-    result = analyze_image(tmp_path, exam_type, prompt)  # call your custom function
-    os.remove(tmp_path)
-
-    # Return both the eye_key (to sort results later) and the analysis result
-    return eye_key, result
 
 
 def app():
@@ -60,6 +39,30 @@ def app():
     st.markdown(
         "This page allows you to upload left eye and right eye images, set custom prompts, and generate a combined report."
     )
+    
+    from utils import analyze_image, synthesize_medical_report
+    
+    # --------------------------------------------------
+    # Helper function to process a single image in parallel
+    # --------------------------------------------------
+    def process_single_image(file, exam_type, prompt, eye_key):
+        """
+        file: the uploaded file from st.file_uploader
+        exam_type: e.g. "oct_macula"
+        prompt: the text prompt to pass to analyze_image
+        eye_key: "right" or "left" so we know which eye it belongs to
+        """
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file.name) as tmp:
+            tmp.write(file.read())
+            tmp_path = tmp.name
+
+        result = analyze_image(tmp_path, exam_type, prompt)  # call your custom function
+        os.remove(tmp_path)
+
+        # Return both the eye_key (to sort results later) and the analysis result
+        return eye_key, result
+
+
 
     # Select exam type
     exam_type = st.selectbox("Exam Type", ["oct_macula", "retinografia", "campimetria"])
