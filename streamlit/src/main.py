@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit_authenticator as stauth
 from utils import analyze_image, synthesize_medical_report
-import config as cfg
+import config_azure as cfg
 import yaml
 import tempfile
 import os

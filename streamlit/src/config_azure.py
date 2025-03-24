@@ -1,0 +1,2 @@
+AZURE_ENDPOINT = 'https://redcheckllm.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-15-preview'
+AZURE_API_KEY = '5oU2OQ20ixxluJl5wvuEE1rtQkhWedODIYiQ1KNMiPrKVlE6jV7sJQQJ99BCACYeBjFXJ3w3AAABACOG4LqV'
