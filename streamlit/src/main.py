@@ -40,7 +40,8 @@ def app():
         "This page allows you to upload left eye and right eye images, set custom prompts, and generate a combined report."
     )
     
-    from .utils import analyze_image, synthesize_medical_report
+    if st.session_state.get("authentication_status") is True:
+        from utils import analyze_image, synthesize_medical_report
     
     # --------------------------------------------------
     # Helper function to process a single image in parallel
