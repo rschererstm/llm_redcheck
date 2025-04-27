@@ -176,3 +176,4 @@ cython_debug/
 
 config.py
 config_azure.py
+samples/

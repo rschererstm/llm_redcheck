@@ -440,14 +440,14 @@ wheels = [
 
 [[package]]
 name = "extra-streamlit-components"
-version = "0.1.71"
+version = "0.1.80"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "streamlit" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/16/a7/580b13af828ef38888196f8b2c03fa97afa89cdb7946438ca5f3271e9a81/extra_streamlit_components-0.1.71.tar.gz", hash = "sha256:d18314cf2ed009f95641882b50aa3bdb11b6a0eb6403fb43dbc8af1722419617", size = 2250093 }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/0c/25da4c19a32b0a01e117c81a6a9ba068dfb05bafe97b5db2aa4a3976893e/extra_streamlit_components-0.1.80.tar.gz", hash = "sha256:87d6c38e07381501d8882796adef17d1c1d4e3a79615864d95c1163d2bc136f6", size = 2250100 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/25/57/1115e9b974478fac83ba9cd79def8b3770a91b7a9001c46a76491071f2fe/extra_streamlit_components-0.1.71-py3-none-any.whl", hash = "sha256:c8e6f98446adecd3002756362e50d0669693b7673afaa89cebfced6415cc6bd3", size = 4858597 },
+    { url = "https://files.pythonhosted.org/packages/f8/6e/8df6b6330ff8e2c745a7371972990e1bd2d6df29a933a4743f797fe7e287/extra_streamlit_components-0.1.80-py3-none-any.whl", hash = "sha256:7a8c151da5dcd1f1f97b6c29caa812a1d77928d20fc4bf42a3a4fd788274dd9e", size = 2278493 },
 ]
 
 [[package]]

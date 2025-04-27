@@ -74,10 +74,10 @@ def local_image_to_data_url(image_path):
 
 
 @measure_time
-def analyze_image(image_path: str, tipo_exame: str, prompt: str) -> dict:
+def analyze_image(image_path: str, tipo_exame: str, prompt: str, model="gpt-4o") -> dict:
     # Load API configuration from config.py
     endpoint = config.AZURE_ENDPOINT  # e.g., "https://redcheckllm.openai.azure.com/"
-    deployment = "gpt-4o"
+    deployment = model
     subscription_key = config.AZURE_API_KEY  # Your key
 
     # Initialize the Azure OpenAI client
@@ -156,8 +156,7 @@ def analyze_image(image_path: str, tipo_exame: str, prompt: str) -> dict:
 
 
 @measure_time
-def synthesize_medical_report(output_texts: list, tipo_exame: str, prompt: str) -> dict:
-    estrutura = layouts[tipo_exame]
+def synthesize_medical_report(output_texts: list, tipo_exame: str, prompt: str, model="o3-mini", estrutura=None) -> dict:
     
     # Concatena todas as descrições clínicas
     combined_text = "\n\n".join(output_texts)
@@ -194,7 +193,7 @@ def synthesize_medical_report(output_texts: list, tipo_exame: str, prompt: str) 
 
     # Configuração da API
     endpoint = config.AZURE_ENDPOINT
-    deployment = "gpt-4o"
+    deployment = model
     subscription_key = config.AZURE_API_KEY
 
     # Inicializa o cliente Azure OpenAI
